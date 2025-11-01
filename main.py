@@ -27,8 +27,6 @@ def extraerInformacionDeCMD():
             pid = linea[4]
             listado.append(Netstat.Netstat(local, destino, estado, pid))
 
-    listado.append(Netstat.Netstat('', 'destino', 'estado', 'pid'))
-    listado.append(Netstat.Netstat('', '192.168.1.5', 'estado', 'pid'))
     return listado
 
 def extraerInformacionDePagina(lista):
@@ -71,7 +69,15 @@ def crearMapa(lista):
         centrarLat = sum([float(netstat.geolocation.latitude) for netstat in lista]) / len(lista)
         centrarLong = sum([float(netstat.geolocation.longitude) for netstat in lista]) / len(lista)
 
-    mapa = folium.Map(location=[centrarLat, centrarLong], zoom_start=4)
+    mapa = folium.Map(
+        location=[centrarLat, centrarLong],
+        zoom_start=4,
+        max_bounds=True,
+        max_lat=90,
+        min_lat=-90,
+        max_lon=180,
+        min_lon=-180
+    )
     for netstat in lista:
         lat = netstat.geolocation.latitude
         long = netstat.geolocation.longitude
@@ -85,7 +91,7 @@ def crearMapa(lista):
             <ul>
                 <li>País: {pais}</li>
                 <li>Región: {reg}</li>
-                <li>Ciudad: {ciudad}</li>import Geolocation
+                <li>Ciudad: {ciudad}</li>
         """
 
         folium.Marker(
