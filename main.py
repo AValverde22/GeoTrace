@@ -27,29 +27,42 @@ def extraerInformacionDeCMD():
             pid = linea[4]
             listado.append(Netstat.Netstat(local, destino, estado, pid))
 
+    listado.append(Netstat.Netstat('', 'destino', 'estado', 'pid'))
+    listado.append(Netstat.Netstat('', '192.168.1.5', 'estado', 'pid'))
     return listado
 
-def extraerInformacionDePagina(netstat):
-    url = "https://ipinfo.io/" + netstat.destino
-    pagina = urlopen(url)
-    html = pagina.read().decode("utf-8")[2:-2].split(",\n")
-    listado = list()
-    diccionario = dict()
+def extraerInformacionDePagina(lista):
+    posicionesAEliminar = list()
 
-    for elemento in html: listado.append(elemento.split(":"))
-    for elemento in listado: diccionario[elemento[0].lstrip()] = elemento[1]
+    for i in range(len(lista)):
+        try:
+            nt = lista[i]
+            url = "https://ipinfo.io/" + nt.destino
+            pagina = urlopen(url)
+            html = pagina.read().decode("utf-8")[2:-2].split(",\n")
+            listado = list()
+            diccionario = dict()
 
-    print(diccionario)
-    netstat.geolocation.country = diccionario['"country"'].lstrip()[1:-1]
-    netstat.geolocation.region = diccionario['"region"'].lstrip()[1:-1]
-    netstat.geolocation.city = diccionario['"city"'].lstrip()[1:-1]
-    netstat.geolocation.organization = diccionario['"org"'].lstrip()[1:-1]
+            for elemento in html: listado.append(elemento.split(":"))
+            for elemento in listado: diccionario[elemento[0].lstrip()] = elemento[1]
 
-    ubicacion = diccionario['"loc"'].lstrip()[1:-1].split(",")
-    netstat.geolocation.latitude = ubicacion[0]
-    netstat.geolocation.longitude = ubicacion[1]
+            nt.geolocation.country = diccionario['"country"'].lstrip()[1:-1]
+            nt.geolocation.region = diccionario['"region"'].lstrip()[1:-1]
+            nt.geolocation.city = diccionario['"city"'].lstrip()[1:-1]
+            nt.geolocation.organization = diccionario['"org"'].lstrip()[1:-1]
 
-    return netstat
+            ubicacion = diccionario['"loc"'].lstrip()[1:-1].split(",")
+            nt.geolocation.latitude = ubicacion[0]
+            nt.geolocation.longitude = ubicacion[1]
+
+            print(diccionario)
+            lista[i] = nt
+        except:
+            posicionesAEliminar.append(i - len(posicionesAEliminar))
+            continue
+
+    for pos in posicionesAEliminar: lista.pop(pos)
+    return lista
 
 def crearMapa(lista):
     centrarLat = centrarLong = 0
@@ -73,31 +86,6 @@ def crearMapa(lista):
                 <li>País: {pais}</li>
                 <li>Región: {reg}</li>
                 <li>Ciudad: {ciudad}</li>import Geolocation
-
-class Netstat:
-    def __init__(self, local, destino, estado, PID):
-        self._local = local
-        self._destino = destino
-        self._estado = estado
-        self._PID = PID
-        self._geolocation = Geolocation.Geolocation()
-
-    @property
-    def local(self): return self._local
-
-    @property
-    def destino(self): return self._destino
-
-    @property
-    def estado(self): return self._estado
-
-    @property
-    def PID(self): return self._PID
-
-    @property
-    def geolocation(self): return self._geolocation
-
-            </ul>
         """
 
         folium.Marker(
@@ -113,7 +101,7 @@ class Netstat:
 
 def main():
     listado = extraerInformacionDeCMD()
-    for i in range(len(listado)): listado[i] = extraerInformacionDePagina(listado[i])
+    listado = extraerInformacionDePagina(listado)
     crearMapa(listado)
 
 if __name__ == '__main__':
